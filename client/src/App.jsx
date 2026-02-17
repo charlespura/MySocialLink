@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { 
-  FaFacebook, FaGithub, FaInstagram, FaGlobe, FaMoon, FaSun, 
-  FaArrowRight, FaCopy, FaCheck, FaPlus, FaTrash, FaEdit, 
+import {
+  FaFacebook, FaGithub, FaInstagram, FaGlobe, FaMoon, FaSun,
+  FaArrowRight, FaCopy, FaCheck, FaPlus, FaTrash, FaEdit,
   FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord,
   FaCloudUploadAlt, FaCloudDownloadAlt, FaLock, FaUnlock, FaKey
 } from "react-icons/fa";
@@ -34,6 +34,28 @@ const getIcon = (iconName) => {
   }
 };
 
+const normalizeUrl = (value) => {
+  if (!value) return "";
+  return value.startsWith("http://") || value.startsWith("https://")
+    ? value
+    : `https://${value}`;
+};
+
+const getFacebookHandle = (value) => {
+  try {
+    const url = new URL(normalizeUrl(value));
+    if (!url.hostname.includes("facebook.com")) return "";
+    if (url.pathname.includes("profile.php")) {
+      const id = url.searchParams.get("id");
+      return id ? `ID ${id}` : "";
+    }
+    const segments = url.pathname.split("/").filter(Boolean);
+    return segments[0] || "";
+  } catch {
+    return "";
+  }
+};
+
 function App() {
   const [username, setUsername] = useState("");
   const [userLinks, setUserLinks] = useState([]);
@@ -49,7 +71,7 @@ function App() {
   const [notification, setNotification] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Password related states
   const [password, setPassword] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
@@ -57,6 +79,11 @@ function App() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [enteredPassword, setEnteredPassword] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+
+  const facebookLink = userLinks.find(
+    (link) => link.platform === "Facebook" && link.url && link.url.trim() !== ""
+  );
+  const facebookHandle = facebookLink ? getFacebookHandle(facebookLink.url) : "";
 
   // Get username from URL hash on load
   useEffect(() => {
@@ -112,25 +139,25 @@ function App() {
 
     setIsSaving(true);
     const cleanUsername = username.toLowerCase().replace(/\s+/g, '');
-    
+
     try {
       // Save to Firebase with password
       await saveUserLinks(cleanUsername, userLinks, password);
-      
+
       // Save to localStorage as backup
       localStorage.setItem(`links_${cleanUsername}`, JSON.stringify(userLinks));
-      
+
       // Update URL with hash
       window.location.hash = cleanUsername;
-      
+
       setUsername(cleanUsername);
       setHasPassword(true);
       setIsLocked(false);
       setShowCreator(false);
-      
+
       const shareableUrl = `${window.location.origin}${window.location.pathname}#${cleanUsername}`;
       setShareUrl(shareableUrl);
-      
+
       showNotification("✅ Saved to cloud! Page is password protected.");
     } catch (error) {
       console.error("Error saving:", error);
@@ -191,7 +218,7 @@ function App() {
 
   // Update link
   const updateLink = (id, field, value) => {
-    setUserLinks(userLinks.map(link => 
+    setUserLinks(userLinks.map(link =>
       link.id === id ? { ...link, [field]: value } : link
     ));
   };
@@ -203,7 +230,7 @@ function App() {
 
   // Toggle link edit mode
   const toggleLinkEdit = (id) => {
-    setUserLinks(userLinks.map(link => 
+    setUserLinks(userLinks.map(link =>
       link.id === id ? { ...link, isEditing: !link.isEditing } : link
     ));
   };
@@ -256,7 +283,7 @@ function App() {
   // Password Modal - FIXED VERSION with autoFocus and better mobile responsiveness
   const PasswordModal = () => (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div 
+      <div
         className={`w-full max-w-md rounded-2xl shadow-2xl transform transition-all ${
           darkMode ? 'bg-gray-800' : 'bg-white'
         }`}
@@ -282,7 +309,7 @@ function App() {
               This page is password protected. Enter the password to edit.
             </p>
           </div>
-          
+
           <div className="space-y-4">
             <input
               type="password"
@@ -290,13 +317,13 @@ function App() {
               onChange={(e) => setEnteredPassword(e.target.value)}
               placeholder="Enter password"
               className={`w-full px-4 py-4 rounded-xl border-2 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition text-base ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                darkMode
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                   : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
               }`}
               autoFocus
             />
-            
+
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => {
@@ -304,8 +331,8 @@ function App() {
                   setEnteredPassword("");
                 }}
                 className={`w-full sm:flex-1 px-4 py-4 rounded-xl font-semibold transition text-base ${
-                  darkMode 
-                    ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                  darkMode
+                    ? 'bg-gray-700 text-white hover:bg-gray-600'
                     : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
                 }`}
               >
@@ -315,8 +342,8 @@ function App() {
                 onClick={handleVerifyPassword}
                 disabled={isVerifying}
                 className={`w-full sm:flex-1 px-4 py-4 rounded-xl font-semibold transition flex items-center justify-center gap-2 text-base ${
-                  darkMode 
-                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                  darkMode
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
                     : 'bg-purple-500 text-white hover:bg-purple-600'
                 } ${isVerifying ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
@@ -343,17 +370,17 @@ function App() {
   if (showCreator) {
     return (
       <div className={`min-h-screen transition-colors duration-300 ${
-        darkMode 
-          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-800' 
+        darkMode
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-800'
           : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
       }`}>
-        
+
         {/* Theme Toggle - Mobile Responsive */}
         <button
           onClick={() => setDarkMode(!darkMode)}
           className={`fixed top-4 right-4 p-3 sm:p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
-            darkMode 
-              ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300' 
+            darkMode
+              ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300'
               : 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
           }`}
         >
@@ -397,8 +424,8 @@ function App() {
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="john123"
                   className={`w-full px-4 py-3 sm:py-4 rounded-xl border-2 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition text-base ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                       : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                   }`}
                 />
@@ -416,8 +443,8 @@ function App() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password to protect your page"
                   className={`w-full px-4 py-3 sm:py-4 rounded-xl border-2 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition text-base ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                       : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                   }`}
                 />
@@ -501,8 +528,8 @@ function App() {
                           onChange={(e) => updateLink(link.id, 'url', e.target.value)}
                           placeholder={link.placeholder}
                           className={`flex-1 px-3 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm ${
-                            darkMode 
-                              ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' 
+                            darkMode
+                              ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400'
                               : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                           }`}
                         />
@@ -602,11 +629,11 @@ function App() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
-      darkMode 
-        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-800' 
+      darkMode
+        ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-800'
         : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
     }`}>
-      
+
       {/* Password Modal */}
       {showPasswordModal && <PasswordModal />}
 
@@ -614,8 +641,8 @@ function App() {
       <button
         onClick={() => setDarkMode(!darkMode)}
         className={`fixed top-3 right-3 sm:top-4 sm:right-4 p-3 sm:p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
-          darkMode 
-            ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300' 
+          darkMode
+            ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300'
             : 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
         }`}
       >
@@ -626,8 +653,8 @@ function App() {
       <button
         onClick={handleEditClick}
         className={`fixed top-3 left-3 sm:top-4 sm:left-4 p-3 sm:p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 flex items-center gap-2 ${
-          darkMode 
-            ? 'bg-purple-600 text-white hover:bg-purple-700' 
+          darkMode
+            ? 'bg-purple-600 text-white hover:bg-purple-700'
             : 'bg-purple-500 text-white hover:bg-purple-600'
         }`}
       >
@@ -690,7 +717,28 @@ function App() {
           }`}>
             Connect with me on social media
           </p>
-          
+
+          {facebookLink && (
+            <div className="mt-4 sm:mt-5 flex justify-center">
+              <a
+                href={facebookLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-md transition-all duration-200 ${
+                  darkMode ? 'bg-blue-700/80 text-white' : 'bg-blue-600 text-white'
+                } hover:opacity-90`}
+              >
+                <span className="text-xl sm:text-2xl">{getIcon("FaFacebook")}</span>
+                <div className="text-left">
+                  <div className="text-xs uppercase tracking-wider opacity-80">Facebook</div>
+                  <div className="text-sm sm:text-base font-semibold">
+                    {facebookHandle || "View profile"}
+                  </div>
+                </div>
+              </a>
+            </div>
+          )}
+
           {/* Stats */}
           <div className="flex justify-center gap-6 sm:gap-8 mt-4 sm:mt-6">
             <div className="text-center">
@@ -726,7 +774,7 @@ function App() {
                 } text-white p-4 sm:p-5 rounded-xl hover:opacity-90 transform hover:scale-[1.02] sm:hover:scale-105 hover:shadow-2xl transition-all duration-300 block shadow-lg relative overflow-hidden`}
               >
                 <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-                
+
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <span className="text-xl sm:text-2xl">{getIcon(link.iconName)}</span>
@@ -748,7 +796,7 @@ function App() {
                   </div>
                 </div>
               </a>
-              
+
               {hoveredIndex === index && (
                 <div className="absolute -top-8 sm:-top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs sm:text-sm py-1 px-2 sm:px-3 rounded-lg whitespace-nowrap">
                   Click to visit {link.platform}
@@ -763,7 +811,7 @@ function App() {
         <div className={`text-center mt-8 sm:mt-12 transition-colors duration-300 text-sm sm:text-base ${
           darkMode ? 'text-gray-400' : 'text-gray-500'
         }`}>
-          <p>Create your own link page at <a 
+          <p>Create your own link page at <a
             href={window.location.pathname}
             className="text-purple-600 hover:underline"
           >MySocialLink</a></p>
