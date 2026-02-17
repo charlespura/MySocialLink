@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { 
   FaFacebook, FaGithub, FaInstagram, FaGlobe, FaMoon, FaSun, 
   FaArrowRight, FaCopy, FaCheck, FaPlus, FaTrash, FaEdit, 
-  FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord,
-  FaGithub as FaGithubIcon // Renamed to avoid conflict
+  FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord
 } from "react-icons/fa";
 
 // Available platforms for users to choose from
@@ -21,7 +20,6 @@ const AVAILABLE_PLATFORMS = [
 function App() {
   const [username, setUsername] = useState("");
   const [userLinks, setUserLinks] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
   const [showCreator, setShowCreator] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -29,11 +27,11 @@ function App() {
   const [shareUrl, setShareUrl] = useState("");
   const [notification, setNotification] = useState("");
 
-  // Get username from URL on load
+  // Get username from URL hash on load
   useEffect(() => {
-    const path = window.location.pathname;
-    const urlUsername = path.split('/').pop();
-    if (urlUsername && urlUsername !== "MySocialLink" && urlUsername !== "") {
+    const hash = window.location.hash;
+    const urlUsername = hash.replace('#', '');
+    if (urlUsername && urlUsername !== "") {
       setUsername(urlUsername);
       loadUserLinks(urlUsername);
     } else {
@@ -65,15 +63,14 @@ function App() {
     // Save to localStorage
     localStorage.setItem(`links_${cleanUsername}`, JSON.stringify(userLinks));
     
-    // Update URL without page reload
-    window.history.pushState({}, '', `/MySocialLink/${cleanUsername}`);
+    // Update URL with hash
+    window.location.hash = cleanUsername;
     
     setUsername(cleanUsername);
-    setIsEditing(false);
     setShowCreator(false);
     
-    // Create shareable URL
-    const shareableUrl = `${window.location.origin}/MySocialLink/${cleanUsername}`;
+    // Create shareable URL with hash
+    const shareableUrl = `${window.location.origin}${window.location.pathname}#${cleanUsername}`;
     setShareUrl(shareableUrl);
     
     showNotification(`Page created! Share: ${shareableUrl}`);
@@ -138,6 +135,25 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Listen for hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      const urlUsername = hash.replace('#', '');
+      if (urlUsername && urlUsername !== "") {
+        setUsername(urlUsername);
+        loadUserLinks(urlUsername);
+        setShowCreator(false);
+      } else {
+        setShowCreator(true);
+        setUserLinks([]);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // If showing creator page
   if (showCreator) {
@@ -212,7 +228,7 @@ function App() {
               <p className={`text-sm mt-2 ${
                 darkMode ? 'text-gray-400' : 'text-gray-500'
               }`}>
-                Your page will be at: yoursite.com/{username || "username"}
+                Your page will be at: {window.location.origin}{window.location.pathname}#{username || "username"}
               </p>
             </div>
           </div>
@@ -363,7 +379,7 @@ function App() {
         {darkMode ? <FaSun size={20} /> : <FaMoon size={20} />}
       </button>
 
-      {/* Edit Button (only for page owner) */}
+      {/* Edit Button */}
       <button
         onClick={() => setShowCreator(true)}
         className={`fixed top-4 left-4 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
@@ -376,20 +392,20 @@ function App() {
       </button>
 
       {/* Share URL Display */}
-      {shareUrl && (
-        <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-10 ${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        } rounded-full shadow-lg px-4 py-2 flex items-center gap-2`}>
-          <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Share:</span>
-          <span className="text-purple-600 font-mono text-sm">{shareUrl}</span>
-          <button
-            onClick={() => copyToClipboard(shareUrl)}
-            className="p-1 hover:bg-gray-100 rounded-full transition"
-          >
-            <FaCopy className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
-          </button>
-        </div>
-      )}
+      <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-10 ${
+        darkMode ? 'bg-gray-800' : 'bg-white'
+      } rounded-full shadow-lg px-4 py-2 flex items-center gap-2`}>
+        <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Share:</span>
+        <span className="text-purple-600 font-mono text-sm">
+          {window.location.origin}{window.location.pathname}#{username}
+        </span>
+        <button
+          onClick={() => copyToClipboard(`${window.location.origin}${window.location.pathname}#${username}`)}
+          className="p-1 hover:bg-gray-100 rounded-full transition"
+        >
+          <FaCopy className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+        </button>
+      </div>
 
       {/* Header */}
       <div className={`backdrop-blur-sm shadow-lg transition-colors duration-300 ${
@@ -399,7 +415,7 @@ function App() {
           <h1 className={`text-5xl font-bold text-center transition-colors duration-300 ${
             darkMode ? 'text-white' : 'text-gray-800'
           }`}>
-            {username || "User"} <span className="text-5xl animate-bounce inline-block">🔗</span>
+            {username} <span className="text-5xl animate-bounce inline-block">🔗</span>
           </h1>
           <p className={`text-center mt-2 transition-colors duration-300 ${
             darkMode ? 'text-gray-300' : 'text-gray-600'
@@ -480,7 +496,7 @@ function App() {
           darkMode ? 'text-gray-400' : 'text-gray-500'
         }`}>
           <p>Create your own link page at <a 
-            href="/MySocialLink/" 
+            href={window.location.pathname}
             className="text-purple-600 hover:underline"
           >MySocialLink</a></p>
           <div className="flex justify-center gap-4 mt-4">
