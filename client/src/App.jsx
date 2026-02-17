@@ -5,7 +5,7 @@ import {
   FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord,
   FaCloudUploadAlt, FaCloudDownloadAlt
 } from "react-icons/fa";
-import { saveUserLinks, getUserLinks } from './firebase'; // Removed 'db' import
+import { saveUserLinks, getUserLinks } from './firebase';
 
 // Available platforms for users to choose from
 const AVAILABLE_PLATFORMS = [
@@ -40,7 +40,12 @@ function App() {
   const [showCreator, setShowCreator] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
+  // Updated dark mode with localStorage persistence
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedMode = localStorage.getItem('darkMode');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return savedMode !== null ? JSON.parse(savedMode) : systemPrefersDark;
+  });
   const [shareUrl, setShareUrl] = useState("");
   const [notification, setNotification] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -185,13 +190,15 @@ function App() {
     setTimeout(() => setNotification(""), 3000);
   };
 
-  // Handle dark mode
+  // Handle dark mode with localStorage persistence
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+    // Save to localStorage whenever dark mode changes
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
   // Listen for hash changes
