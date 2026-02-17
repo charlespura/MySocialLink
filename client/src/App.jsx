@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import { 
   FaFacebook, FaGithub, FaInstagram, FaGlobe, FaMoon, FaSun, 
   FaArrowRight, FaCopy, FaCheck, FaPlus, FaTrash, FaEdit, 
-  FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord
+  FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord,
+  FaCloudUploadAlt, FaCloudDownloadAlt
 } from "react-icons/fa";
+import { db, saveUserLinks, getUserLinks } from './firebase';
+import { ref, set } from 'firebase/database';
 
-// Available platforms for users to choose from - using icon names instead of elements
+// Available platforms for users to choose from
 const AVAILABLE_PLATFORMS = [
   { name: "Facebook", iconName: "FaFacebook", color: "bg-blue-600", darkColor: "bg-blue-700", placeholder: "https://facebook.com/yourusername" },
   { name: "GitHub", iconName: "FaGithub", color: "bg-gray-800", darkColor: "bg-gray-900", placeholder: "https://github.com/yourusername" },
@@ -41,6 +44,8 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [notification, setNotification] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Get username from URL hash on load
   useEffect(() => {
@@ -54,38 +59,80 @@ function App() {
     }
   }, []);
 
-  // Load user links from localStorage
-  const loadUserLinks = (user) => {
-    const saved = localStorage.getItem(`links_${user}`);
-    if (saved) {
-      setUserLinks(JSON.parse(saved));
-    } else {
-      setShowCreator(true);
+  // Load user links from Firebase
+  const loadUserLinks = async (user) => {
+    setIsLoading(true);
+    try {
+      // Try Firebase first
+      const firebaseLinks = await getUserLinks(user);
+      if (firebaseLinks) {
+        setUserLinks(firebaseLinks);
+        showNotification("Loaded from cloud! ☁️");
+      } else {
+        // Fallback to localStorage
+        const localLinks = localStorage.getItem(`links_${user}`);
+        if (localLinks) {
+          setUserLinks(JSON.parse(localLinks));
+          showNotification("Loaded from local storage 💾");
+        } else {
+          setShowCreator(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading links:", error);
+      showNotification("Error loading links. Using local backup.");
+      
+      // Fallback to localStorage
+      const localLinks = localStorage.getItem(`links_${user}`);
+      if (localLinks) {
+        setUserLinks(JSON.parse(localLinks));
+      } else {
+        setShowCreator(true);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Save user links
-  const saveUserLinks = () => {
+  // Save user links to Firebase and localStorage
+  const saveUserLinks = async () => {
     if (!username.trim()) {
       showNotification("Please enter a username");
       return;
     }
 
+    setIsSaving(true);
     const cleanUsername = username.toLowerCase().replace(/\s+/g, '');
     
-    // Save to localStorage
-    localStorage.setItem(`links_${cleanUsername}`, JSON.stringify(userLinks));
-    
-    // Update URL with hash
-    window.location.hash = cleanUsername;
-    
-    setUsername(cleanUsername);
-    setShowCreator(false);
-    
-    const shareableUrl = `${window.location.origin}${window.location.pathname}#${cleanUsername}`;
-    setShareUrl(shareableUrl);
-    
-    showNotification(`Page created! Share: ${shareableUrl}`);
+    try {
+      // Save to Firebase (preserves your studentLogs data)
+      await saveUserLinks(cleanUsername, userLinks);
+      
+      // Save to localStorage as backup
+      localStorage.setItem(`links_${cleanUsername}`, JSON.stringify(userLinks));
+      
+      // Update URL with hash
+      window.location.hash = cleanUsername;
+      
+      setUsername(cleanUsername);
+      setShowCreator(false);
+      
+      const shareableUrl = `${window.location.origin}${window.location.pathname}#${cleanUsername}`;
+      setShareUrl(shareableUrl);
+      
+      showNotification("✅ Saved to cloud! Available on all devices.");
+    } catch (error) {
+      console.error("Error saving:", error);
+      showNotification("⚠️ Saved locally only. Cloud save failed.");
+      
+      // Still save locally
+      localStorage.setItem(`links_${cleanUsername}`, JSON.stringify(userLinks));
+      window.location.hash = cleanUsername;
+      setUsername(cleanUsername);
+      setShowCreator(false);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Add new link
@@ -129,7 +176,7 @@ function App() {
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     } else {
-      showNotification("Copied to clipboard!");
+      showNotification("Copied to clipboard! 📋");
     }
   };
 
@@ -208,7 +255,7 @@ function App() {
             <p className={`text-center mb-6 ${
               darkMode ? 'text-gray-300' : 'text-gray-600'
             }`}>
-              No sign-up required! Just choose a username and add your links.
+              No sign-up required! Links save to cloud automatically.
             </p>
 
             {/* Username Input */}
@@ -232,9 +279,13 @@ function App() {
                 />
                 <button
                   onClick={saveUserLinks}
-                  className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+                  disabled={isSaving}
+                  className={`px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 ${
+                    isSaving ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  <FaSave /> Create
+                  {isSaving ? <FaCloudUploadAlt className="animate-pulse" /> : <FaSave />}
+                  {isSaving ? 'Saving...' : 'Create'}
                 </button>
               </div>
               <p className={`text-sm mt-2 ${
@@ -359,9 +410,13 @@ function App() {
               <div className="mt-6 text-center">
                 <button
                   onClick={saveUserLinks}
-                  className="px-8 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200"
+                  disabled={isSaving}
+                  className={`px-8 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 mx-auto ${
+                    isSaving ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  Save & Publish Page
+                  {isSaving ? <FaCloudUploadAlt className="animate-pulse" /> : <FaCloudUploadAlt />}
+                  {isSaving ? 'Saving to Cloud...' : 'Save & Publish to Cloud'}
                 </button>
               </div>
             )}
@@ -372,6 +427,19 @@ function App() {
   }
 
   // Main view - showing user's links
+  if (isLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${
+        darkMode ? 'bg-gray-900' : 'bg-gray-50'
+      }`}>
+        <div className="text-center">
+          <FaCloudDownloadAlt className="text-6xl text-purple-600 animate-bounce mx-auto mb-4" />
+          <p className={darkMode ? 'text-white' : 'text-gray-800'}>Loading links from cloud...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
       darkMode 
@@ -402,6 +470,13 @@ function App() {
       >
         <FaEdit size={20} />
       </button>
+
+      {/* Cloud Status Indicator */}
+      <div className={`fixed top-4 left-20 p-2 rounded-full shadow-lg z-10 ${
+        darkMode ? 'bg-green-600' : 'bg-green-500'
+      } text-white text-xs`}>
+        <FaCloudUploadAlt className="inline mr-1" /> Cloud Saved
+      </div>
 
       {/* Share URL Display */}
       <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-10 ${
@@ -512,10 +587,17 @@ function App() {
             className="text-purple-600 hover:underline"
           >MySocialLink</a></p>
           <div className="flex justify-center gap-4 mt-4">
-            <span className="text-sm opacity-75">✨ No sign-up required</span>
+            <span className="text-sm opacity-75">✨ Cloud saved • Access anywhere</span>
           </div>
         </div>
       </div>
+
+      {/* Notification */}
+      {notification && (
+        <div className="fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce">
+          {notification}
+        </div>
+      )}
     </div>
   );
 }
