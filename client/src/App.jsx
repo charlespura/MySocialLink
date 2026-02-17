@@ -4,7 +4,7 @@ import {
   FaArrowRight, FaCopy, FaCheck, FaPlus, FaTrash, FaEdit, 
   FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord,
   FaCloudUploadAlt, FaCloudDownloadAlt, FaLock, FaUnlock, FaKey,
-  FaUserCircle  // Add this for default avatar
+  FaUserCircle, FaImage
 } from "react-icons/fa";
 import { saveUserLinks, getUserLinks, verifyPassword } from './firebase';
 
@@ -35,12 +35,11 @@ const getIcon = (iconName) => {
   }
 };
 
-// Helper function to extract Facebook username/ID from URL
+// Helper function to extract Facebook username/ID from URL (keep for display purposes)
 const getFacebookHandle = (url) => {
   if (!url) return "";
   
   try {
-    // Clean up the URL
     let cleanUrl = url;
     if (!url.startsWith('http')) {
       cleanUrl = 'https://' + url;
@@ -48,18 +47,14 @@ const getFacebookHandle = (url) => {
     
     const urlObj = new URL(cleanUrl);
     
-    // Handle different Facebook URL formats
     if (urlObj.hostname.includes('facebook.com') || urlObj.hostname.includes('fb.com')) {
-      // Handle profile.php?id= format
       if (urlObj.pathname.includes('profile.php')) {
         const id = urlObj.searchParams.get('id');
         return id || "";
       }
       
-      // Handle /username format
       const pathParts = urlObj.pathname.split('/').filter(part => part.length > 0);
       if (pathParts.length > 0) {
-        // Remove any query parameters or hash from the username
         return pathParts[0].split('?')[0].split('#')[0];
       }
     }
@@ -86,9 +81,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Profile picture states
+  // Profile picture state - now manually entered by user
   const [profilePicture, setProfilePicture] = useState("");
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [profilePicError, setProfilePicError] = useState(false);
   
   // Password related states
   const [password, setPassword] = useState("");
@@ -98,53 +93,7 @@ function App() {
   const [enteredPassword, setEnteredPassword] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // Function to fetch Facebook profile picture
-  const fetchFacebookProfilePicture = async (facebookUrl) => {
-    if (!facebookUrl) {
-      setProfilePicture("");
-      return;
-    }
-    
-    setIsLoadingProfile(true);
-    
-    try {
-      const handle = getFacebookHandle(facebookUrl);
-      
-      if (!handle) {
-        setProfilePicture("");
-        return;
-      }
-      
-      // Method 1: Try using Facebook's Graph API (public endpoint)
-      // This works for many public profiles
-      const profilePicUrl = `https://graph.facebook.com/${handle}/picture?type=large`;
-      
-      // Test if the image loads
-      const img = new Image();
-      img.onload = () => {
-        setProfilePicture(profilePicUrl);
-        setIsLoadingProfile(false);
-      };
-      img.onerror = () => {
-        // Method 2: Try using the numeric ID format
-        if (handle.match(/^\d+$/)) {
-          const numericIdUrl = `https://graph.facebook.com/${handle}/picture?type=large&redirect=true&width=500&height=500`;
-          setProfilePicture(numericIdUrl);
-        } else {
-          setProfilePicture("");
-        }
-        setIsLoadingProfile(false);
-      };
-      img.src = profilePicUrl;
-      
-    } catch (error) {
-      console.error("Error fetching profile picture:", error);
-      setProfilePicture("");
-      setIsLoadingProfile(false);
-    }
-  };
-
-  // Get the first Facebook link from user's links
+  // Get the first Facebook link from user's links (for display)
   const facebookLink = userLinks.find(
     link => link.platform === "Facebook" && link.url && link.url.trim() !== ""
   );
@@ -161,14 +110,7 @@ function App() {
         // Load profile picture if exists in data
         if (data.profilePicture) {
           setProfilePicture(data.profilePicture);
-        } else {
-          // Try to fetch from Facebook if there's a Facebook link
-          const fbLink = data.links.find(
-            link => link.platform === "Facebook" && link.url && link.url.trim() !== ""
-          );
-          if (fbLink) {
-            await fetchFacebookProfilePicture(fbLink.url);
-          }
+          setProfilePicError(false);
         }
         
         // If there's a password, lock the page
@@ -237,21 +179,11 @@ function App() {
     }
   };
 
-  // Update link and fetch profile picture if Facebook URL changes
+  // Update link
   const updateLink = (id, field, value) => {
-    setUserLinks(userLinks.map(link => {
-      if (link.id === id) {
-        const updatedLink = { ...link, [field]: value };
-        
-        // If updating Facebook URL, fetch new profile picture
-        if (updatedLink.platform === "Facebook" && field === "url") {
-          fetchFacebookProfilePicture(value);
-        }
-        
-        return updatedLink;
-      }
-      return link;
-    }));
+    setUserLinks(userLinks.map(link => 
+      link.id === id ? { ...link, [field]: value } : link
+    ));
   };
 
   // Verify password before editing
@@ -521,6 +453,56 @@ function App() {
                       : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                   }`}
                 />
+              </div>
+
+              {/* Profile Picture URL Input - NEW */}
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  darkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Profile Picture URL (optional)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={profilePicture}
+                    onChange={(e) => {
+                      setProfilePicture(e.target.value);
+                      setProfilePicError(false);
+                    }}
+                    placeholder="https://example.com/my-photo.jpg"
+                    className={`flex-1 px-4 py-3 sm:py-4 rounded-xl border-2 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition text-base ${
+                      darkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                        : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                    }`}
+                  />
+                  {profilePicture && (
+                    <div className="relative">
+                      <img 
+                        src={profilePicture} 
+                        alt="Preview" 
+                        className="w-12 h-12 rounded-full object-cover border-2 border-purple-500"
+                        onError={() => setProfilePicError(true)}
+                      />
+                      {profilePicError && (
+                        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                          !
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <p className={`text-xs sm:text-sm mt-1 ${
+                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  Enter a direct link to your profile picture (JPG, PNG, or GIF)
+                </p>
+                {profilePicError && (
+                  <p className="text-xs text-red-500 mt-1">
+                    ⚠️ Image failed to load. Please check the URL.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -795,15 +777,7 @@ function App() {
           {/* Profile Picture Section */}
           <div className="flex flex-col items-center mb-4">
             <div className="relative">
-              {isLoadingProfile ? (
-                <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center ${
-                  darkMode ? 'bg-gray-700' : 'bg-gray-200'
-                } animate-pulse`}>
-                  <FaCloudDownloadAlt className={`text-3xl sm:text-4xl ${
-                    darkMode ? 'text-gray-600' : 'text-gray-400'
-                  } animate-spin`} />
-                </div>
-              ) : profilePicture ? (
+              {profilePicture ? (
                 <img
                   src={profilePicture}
                   alt={`${username}'s profile`}
@@ -811,6 +785,7 @@ function App() {
                   onError={(e) => {
                     e.target.onerror = null;
                     setProfilePicture("");
+                    showNotification("Profile picture failed to load");
                   }}
                 />
               ) : (
@@ -822,23 +797,7 @@ function App() {
                   }`} />
                 </div>
               )}
-              
-              {/* Facebook Badge if profile picture is from Facebook */}
-              {profilePicture && facebookLink && (
-                <div className={`absolute bottom-0 right-0 p-2 rounded-full ${
-                  darkMode ? 'bg-blue-600' : 'bg-blue-500'
-                } text-white shadow-lg`}>
-                  <FaFacebook size={16} className="sm:w-5 sm:h-5" />
-                </div>
-              )}
             </div>
-            
-            {/* Profile Picture Note */}
-            {facebookLink && !profilePicture && !isLoadingProfile && (
-              <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Profile picture may be private or unavailable
-              </p>
-            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-2">

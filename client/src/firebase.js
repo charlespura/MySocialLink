@@ -21,8 +21,8 @@ export const saveUserLinks = async (username, links, password, profilePicture = 
   try {
     await setDoc(doc(db, "socialLinks", username), {
       links: links,
-      password: password, // Save the password
-      profilePicture: profilePicture, // Save the profile picture URL
+      password: password,
+      profilePicture: profilePicture,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -43,7 +43,7 @@ export const getUserLinks = async (username) => {
       return {
         links: docSnap.data().links,
         password: docSnap.data().password,
-        profilePicture: docSnap.data().profilePicture || "" // Include profile picture with fallback
+        profilePicture: docSnap.data().profilePicture || ""
       };
     }
     return null;
