@@ -282,14 +282,13 @@ This project is open source under the **MIT License**.
 ---
 
 ## 📸 Screenshots
+**Dark Mode**
+![Dark Mode]
+<img width="800" height="500" alt="Screenshot 2026-02-17 at 6 08 45 PM" src="https://github.com/user-attachments/assets/406c6a70-7b25-48ed-b8fb-7a86c73b3e96" />
 
 **Light Mode**
-![Light Mode](https://via.placeholder.com/800x400/FFFFFF/000000?text=Light+Mode+Preview)
+![Light Mode]
+<img width="800" height="500" alt="Screenshot 2026-02-17 at 6 09 03 PM" src="https://github.com/user-attachments/assets/aaa5b965-f5a1-4de4-a7d2-27c613c48115" />
 
-**Dark Mode**
-![Dark Mode](https://via.placeholder.com/800x400/1F2937/FFFFFF?text=Dark+Mode+Preview)
-
-**Creator Page**
-![Creator Page](https://via.placeholder.com/800x400/8B5CF6/FFFFFF?text=Creator+Page)
 
 Made with ❤️ by Charles Pura
