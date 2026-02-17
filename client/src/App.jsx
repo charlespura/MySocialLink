@@ -5,17 +5,32 @@ import {
   FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord
 } from "react-icons/fa";
 
-// Available platforms for users to choose from
+// Available platforms for users to choose from - using icon names instead of elements
 const AVAILABLE_PLATFORMS = [
-  { name: "Facebook", icon: <FaFacebook />, color: "bg-blue-600", darkColor: "bg-blue-700", placeholder: "https://facebook.com/yourusername" },
-  { name: "GitHub", icon: <FaGithub />, color: "bg-gray-800", darkColor: "bg-gray-900", placeholder: "https://github.com/yourusername" },
-  { name: "Instagram", icon: <FaInstagram />, color: "bg-pink-600", darkColor: "bg-pink-700", placeholder: "https://instagram.com/yourusername" },
-  { name: "Portfolio", icon: <FaGlobe />, color: "bg-purple-600", darkColor: "bg-purple-700", placeholder: "https://yourportfolio.com" },
-  { name: "Twitter", icon: <FaTwitter />, color: "bg-blue-400", darkColor: "bg-blue-500", placeholder: "https://twitter.com/yourusername" },
-  { name: "YouTube", icon: <FaYoutube />, color: "bg-red-600", darkColor: "bg-red-700", placeholder: "https://youtube.com/@yourchannel" },
-  { name: "TikTok", icon: <FaTiktok />, color: "bg-black", darkColor: "bg-gray-900", placeholder: "https://tiktok.com/@yourusername" },
-  { name: "Discord", icon: <FaDiscord />, color: "bg-indigo-600", darkColor: "bg-indigo-700", placeholder: "https://discord.gg/yourserver" },
+  { name: "Facebook", iconName: "FaFacebook", color: "bg-blue-600", darkColor: "bg-blue-700", placeholder: "https://facebook.com/yourusername" },
+  { name: "GitHub", iconName: "FaGithub", color: "bg-gray-800", darkColor: "bg-gray-900", placeholder: "https://github.com/yourusername" },
+  { name: "Instagram", iconName: "FaInstagram", color: "bg-pink-600", darkColor: "bg-pink-700", placeholder: "https://instagram.com/yourusername" },
+  { name: "Portfolio", iconName: "FaGlobe", color: "bg-purple-600", darkColor: "bg-purple-700", placeholder: "https://yourportfolio.com" },
+  { name: "Twitter", iconName: "FaTwitter", color: "bg-blue-400", darkColor: "bg-blue-500", placeholder: "https://twitter.com/yourusername" },
+  { name: "YouTube", iconName: "FaYoutube", color: "bg-red-600", darkColor: "bg-red-700", placeholder: "https://youtube.com/@yourchannel" },
+  { name: "TikTok", iconName: "FaTiktok", color: "bg-black", darkColor: "bg-gray-900", placeholder: "https://tiktok.com/@yourusername" },
+  { name: "Discord", iconName: "FaDiscord", color: "bg-indigo-600", darkColor: "bg-indigo-700", placeholder: "https://discord.gg/yourserver" },
 ];
+
+// Icon mapping function
+const getIcon = (iconName) => {
+  switch(iconName) {
+    case "FaFacebook": return <FaFacebook />;
+    case "FaGithub": return <FaGithub />;
+    case "FaInstagram": return <FaInstagram />;
+    case "FaGlobe": return <FaGlobe />;
+    case "FaTwitter": return <FaTwitter />;
+    case "FaYoutube": return <FaYoutube />;
+    case "FaTiktok": return <FaTiktok />;
+    case "FaDiscord": return <FaDiscord />;
+    default: return <FaLink />;
+  }
+};
 
 function App() {
   const [username, setUsername] = useState("");
@@ -45,7 +60,6 @@ function App() {
     if (saved) {
       setUserLinks(JSON.parse(saved));
     } else {
-      // New user - show creator
       setShowCreator(true);
     }
   };
@@ -57,7 +71,6 @@ function App() {
       return;
     }
 
-    // Clean username (no spaces, lowercase)
     const cleanUsername = username.toLowerCase().replace(/\s+/g, '');
     
     // Save to localStorage
@@ -69,7 +82,6 @@ function App() {
     setUsername(cleanUsername);
     setShowCreator(false);
     
-    // Create shareable URL with hash
     const shareableUrl = `${window.location.origin}${window.location.pathname}#${cleanUsername}`;
     setShareUrl(shareableUrl);
     
@@ -82,7 +94,7 @@ function App() {
       id: Date.now(),
       platform: platform.name,
       url: "",
-      icon: platform.icon,
+      iconName: platform.iconName,
       color: platform.color,
       darkColor: platform.darkColor,
       placeholder: platform.placeholder,
@@ -257,7 +269,7 @@ function App() {
                     onClick={() => addLink(platform)}
                     className={`${platform.color} text-white px-4 py-2 rounded-lg hover:opacity-90 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm`}
                   >
-                    {platform.icon}
+                    {getIcon(platform.iconName)}
                     {platform.name}
                     <FaPlus size={12} />
                   </button>
@@ -278,7 +290,7 @@ function App() {
                     {link.isEditing ? (
                       <div className="flex gap-2">
                         <div className={`${link.color} text-white p-3 rounded-lg flex items-center gap-2`}>
-                          {link.icon}
+                          {getIcon(link.iconName)}
                         </div>
                         <input
                           type="url"
@@ -308,7 +320,7 @@ function App() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <span className={`${link.color} text-white p-2 rounded-lg`}>
-                            {link.icon}
+                            {getIcon(link.iconName)}
                           </span>
                           <span className={darkMode ? 'text-white' : 'text-gray-800'}>
                             {link.url || "No URL set"}
@@ -461,7 +473,7 @@ function App() {
                 
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{link.icon}</span>
+                    <span className="text-2xl">{getIcon(link.iconName)}</span>
                     <span className="text-xl font-semibold">{link.platform}</span>
                   </div>
                   <div className="flex items-center gap-3">
