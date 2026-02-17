@@ -3,9 +3,9 @@ import {
   FaFacebook, FaGithub, FaInstagram, FaGlobe, FaMoon, FaSun, 
   FaArrowRight, FaCopy, FaCheck, FaPlus, FaTrash, FaEdit, 
   FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord,
-  FaCloudUploadAlt, FaCloudDownloadAlt
+  FaCloudUploadAlt, FaCloudDownloadAlt, FaLock, FaUnlock, FaKey
 } from "react-icons/fa";
-import { saveUserLinks, getUserLinks } from './firebase';
+import { saveUserLinks, getUserLinks, verifyPassword } from './firebase';
 
 // Available platforms for users to choose from
 const AVAILABLE_PLATFORMS = [
@@ -40,7 +40,6 @@ function App() {
   const [showCreator, setShowCreator] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  // Updated dark mode with localStorage persistence
   const [darkMode, setDarkMode] = useState(() => {
     const savedMode = localStorage.getItem('darkMode');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -50,6 +49,14 @@ function App() {
   const [notification, setNotification] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Password related states
+  const [password, setPassword] = useState("");
+  const [hasPassword, setHasPassword] = useState(false);
+  const [isLocked, setIsLocked] = useState(true);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [enteredPassword, setEnteredPassword] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Get username from URL hash on load
   useEffect(() => {
@@ -67,32 +74,25 @@ function App() {
   const loadUserLinks = async (user) => {
     setIsLoading(true);
     try {
-      // Try Firebase first
-      const firebaseLinks = await getUserLinks(user);
-      if (firebaseLinks && firebaseLinks.length > 0) {
-        setUserLinks(firebaseLinks);
+      const data = await getUserLinks(user);
+      if (data) {
+        setUserLinks(data.links);
+        setHasPassword(!!data.password);
+        // If there's a password, lock the page
+        if (data.password) {
+          setIsLocked(true);
+        } else {
+          setIsLocked(false);
+        }
         showNotification("Loaded from cloud! ☁️");
       } else {
-        // Fallback to localStorage
-        const localLinks = localStorage.getItem(`links_${user}`);
-        if (localLinks) {
-          setUserLinks(JSON.parse(localLinks));
-          showNotification("Loaded from local storage 💾");
-        } else {
-          setShowCreator(true);
-        }
+        // New user - show creator
+        setShowCreator(true);
       }
     } catch (error) {
       console.error("Error loading links:", error);
-      showNotification("Error loading links. Using local backup.");
-      
-      // Fallback to localStorage
-      const localLinks = localStorage.getItem(`links_${user}`);
-      if (localLinks) {
-        setUserLinks(JSON.parse(localLinks));
-      } else {
-        setShowCreator(true);
-      }
+      showNotification("Error loading links.");
+      setShowCreator(true);
     } finally {
       setIsLoading(false);
     }
@@ -105,12 +105,17 @@ function App() {
       return;
     }
 
+    if (!password.trim() && !hasPassword) {
+      showNotification("Please set a password to protect your page");
+      return;
+    }
+
     setIsSaving(true);
     const cleanUsername = username.toLowerCase().replace(/\s+/g, '');
     
     try {
-      // Save to Firebase
-      await saveUserLinks(cleanUsername, userLinks);
+      // Save to Firebase with password
+      await saveUserLinks(cleanUsername, userLinks, password);
       
       // Save to localStorage as backup
       localStorage.setItem(`links_${cleanUsername}`, JSON.stringify(userLinks));
@@ -119,23 +124,53 @@ function App() {
       window.location.hash = cleanUsername;
       
       setUsername(cleanUsername);
+      setHasPassword(true);
+      setIsLocked(false);
       setShowCreator(false);
       
       const shareableUrl = `${window.location.origin}${window.location.pathname}#${cleanUsername}`;
       setShareUrl(shareableUrl);
       
-      showNotification("✅ Saved to cloud! Available on all devices.");
+      showNotification("✅ Saved to cloud! Page is password protected.");
     } catch (error) {
       console.error("Error saving:", error);
-      showNotification("⚠️ Saved locally only. Cloud save failed.");
-      
-      // Still save locally
-      localStorage.setItem(`links_${cleanUsername}`, JSON.stringify(userLinks));
-      window.location.hash = cleanUsername;
-      setUsername(cleanUsername);
-      setShowCreator(false);
+      showNotification("⚠️ Save failed.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Verify password before editing
+  const handleVerifyPassword = async () => {
+    if (!enteredPassword.trim()) {
+      showNotification("Please enter a password");
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const isValid = await verifyPassword(username, enteredPassword);
+      if (isValid) {
+        setIsLocked(false);
+        setShowPasswordModal(false);
+        setEnteredPassword("");
+        showNotification("✅ Access granted!");
+      } else {
+        showNotification("❌ Wrong password!");
+      }
+    } catch (error) {
+      showNotification("Error verifying password");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Handle edit button click
+  const handleEditClick = () => {
+    if (hasPassword && isLocked) {
+      setShowPasswordModal(true);
+    } else {
+      setShowCreator(true);
     }
   };
 
@@ -197,7 +232,6 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    // Save to localStorage whenever dark mode changes
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
@@ -209,7 +243,6 @@ function App() {
       if (urlUsername && urlUsername !== "") {
         setUsername(urlUsername);
         loadUserLinks(urlUsername);
-        setShowCreator(false);
       } else {
         setShowCreator(true);
         setUserLinks([]);
@@ -219,6 +252,83 @@ function App() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  // Password Modal
+  const PasswordModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className={`max-w-md w-full mx-4 p-6 rounded-2xl shadow-2xl ${
+        darkMode ? 'bg-gray-800' : 'bg-white'
+      }`}>
+        <div className="text-center mb-6">
+          <FaLock className={`text-5xl mx-auto mb-4 ${
+            darkMode ? 'text-purple-400' : 'text-purple-600'
+          }`} />
+          <h3 className={`text-2xl font-bold ${
+            darkMode ? 'text-white' : 'text-gray-800'
+          }`}>
+            Page Locked 🔒
+          </h3>
+          <p className={`mt-2 ${
+            darkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            This page is password protected. Enter the password to edit.
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <input
+            type="password"
+            value={enteredPassword}
+            onChange={(e) => setEnteredPassword(e.target.value)}
+            placeholder="Enter password"
+            className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
+              darkMode 
+                ? 'bg-gray-700 border-gray-600 text-white' 
+                : 'bg-white border-gray-300 text-gray-900'
+            }`}
+            onKeyPress={(e) => e.key === 'Enter' && handleVerifyPassword()}
+          />
+          
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setShowPasswordModal(false);
+                setEnteredPassword("");
+              }}
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition ${
+                darkMode 
+                  ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleVerifyPassword}
+              disabled={isVerifying}
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
+                darkMode 
+                  ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                  : 'bg-purple-500 text-white hover:bg-purple-600'
+              } ${isVerifying ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isVerifying ? (
+                <>
+                  <FaCloudDownloadAlt className="animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                <>
+                  <FaKey />
+                  Unlock
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   // If showing creator page
   if (showCreator) {
@@ -261,40 +371,66 @@ function App() {
             <p className={`text-center mb-6 ${
               darkMode ? 'text-gray-300' : 'text-gray-600'
             }`}>
-              No sign-up required! Links save to cloud automatically.
+              Set a password to protect your page from unwanted edits.
             </p>
 
             {/* Username Input */}
-            <div className="max-w-md mx-auto">
-              <label className={`block text-sm font-medium mb-2 ${
-                darkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Choose your username
-              </label>
-              <div className="flex gap-2">
+            <div className="max-w-md mx-auto space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  darkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Choose your username
+                </label>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="john123"
-                  className={`flex-1 px-4 py-3 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
+                  className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
                     darkMode 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
                 />
-                <button
-                  onClick={handleSaveUserLinks}
-                  disabled={isSaving}
-                  className={`px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 ${
-                    isSaving ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {isSaving ? <FaCloudUploadAlt className="animate-pulse" /> : <FaSave />}
-                  {isSaving ? 'Saving...' : 'Create'}
-                </button>
               </div>
-              <p className={`text-sm mt-2 ${
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  darkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Set a password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password to protect your page"
+                  className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                />
+                <p className={`text-xs mt-1 ${
+                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  You'll need this password to edit your page later
+                </p>
+              </div>
+
+              <button
+                onClick={handleSaveUserLinks}
+                disabled={isSaving || !password}
+                className={`w-full px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 ${
+                  (isSaving || !password) ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {isSaving ? <FaCloudUploadAlt className="animate-pulse" /> : <FaSave />}
+                {isSaving ? 'Creating...' : 'Create Protected Page'}
+              </button>
+
+              <p className={`text-sm text-center ${
                 darkMode ? 'text-gray-400' : 'text-gray-500'
               }`}>
                 Your page will be at: {window.location.origin}{window.location.pathname}#{username || "username"}
@@ -453,6 +589,9 @@ function App() {
         : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
     }`}>
       
+      {/* Password Modal */}
+      {showPasswordModal && <PasswordModal />}
+
       {/* Theme Toggle */}
       <button
         onClick={() => setDarkMode(!darkMode)}
@@ -465,24 +604,28 @@ function App() {
         {darkMode ? <FaSun size={20} /> : <FaMoon size={20} />}
       </button>
 
-      {/* Edit Button */}
+      {/* Edit Button - Shows lock if page is protected */}
       <button
-        onClick={() => setShowCreator(true)}
-        className={`fixed top-4 left-4 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
+        onClick={handleEditClick}
+        className={`fixed top-4 left-4 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 flex items-center gap-2 ${
           darkMode 
             ? 'bg-purple-600 text-white hover:bg-purple-700' 
             : 'bg-purple-500 text-white hover:bg-purple-600'
         }`}
       >
-        <FaEdit size={20} />
+        {hasPassword && isLocked ? <FaLock size={20} /> : <FaUnlock size={20} />}
+        <span className="text-sm hidden sm:inline">
+          {hasPassword && isLocked ? 'Locked' : 'Edit'}
+        </span>
       </button>
 
-      {/* Cloud Status Indicator - Only show if links exist */}
+      {/* Cloud Status Indicator */}
       {userLinks.length > 0 && (
-        <div className={`fixed top-4 left-20 p-2 rounded-full shadow-lg z-10 ${
+        <div className={`fixed top-4 left-24 p-2 rounded-full shadow-lg z-10 ${
           darkMode ? 'bg-green-600' : 'bg-green-500'
-        } text-white text-xs`}>
-          <FaCloudUploadAlt className="inline mr-1" /> Cloud Saved
+        } text-white text-xs flex items-center gap-1`}>
+          <FaCloudUploadAlt />
+          <span className="hidden sm:inline">Cloud Saved</span>
         </div>
       )}
 
@@ -509,11 +652,19 @@ function App() {
         darkMode ? 'bg-gray-800/80' : 'bg-white/80'
       }`}>
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <h1 className={`text-5xl font-bold text-center transition-colors duration-300 ${
-            darkMode ? 'text-white' : 'text-gray-800'
-          }`}>
-            {username} <span className="text-5xl animate-bounce inline-block">🔗</span>
-          </h1>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <h1 className={`text-5xl font-bold text-center transition-colors duration-300 ${
+              darkMode ? 'text-white' : 'text-gray-800'
+            }`}>
+              {username}
+            </h1>
+            {hasPassword && (
+              <FaLock className={`text-2xl ${
+                darkMode ? 'text-purple-400' : 'text-purple-600'
+              }`} />
+            )}
+            <span className="text-5xl animate-bounce inline-block">🔗</span>
+          </div>
           <p className={`text-center mt-2 transition-colors duration-300 ${
             darkMode ? 'text-gray-300' : 'text-gray-600'
           }`}>
@@ -597,7 +748,7 @@ function App() {
             className="text-purple-600 hover:underline"
           >MySocialLink</a></p>
           <div className="flex justify-center gap-4 mt-4">
-            <span className="text-sm opacity-75">✨ Cloud saved • Access anywhere</span>
+            <span className="text-sm opacity-75">✨ Password protected • Cloud saved</span>
           </div>
         </div>
       </div>

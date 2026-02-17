@@ -16,11 +16,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// Save user links to Firestore
-export const saveUserLinks = async (username, links) => {
+// Save user links and password to Firestore
+export const saveUserLinks = async (username, links, password) => {
   try {
     await setDoc(doc(db, "socialLinks", username), {
       links: links,
+      password: password, // Save the password
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -38,11 +39,30 @@ export const getUserLinks = async (username) => {
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      return docSnap.data().links;
+      return {
+        links: docSnap.data().links,
+        password: docSnap.data().password
+      };
     }
     return null;
   } catch (error) {
     console.error("Error loading from Firestore:", error);
     throw error;
+  }
+};
+
+// Verify password
+export const verifyPassword = async (username, enteredPassword) => {
+  try {
+    const docRef = doc(db, "socialLinks", username);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return docSnap.data().password === enteredPassword;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error verifying password:", error);
+    return false;
   }
 };
