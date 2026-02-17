@@ -253,77 +253,86 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Password Modal
+  // Password Modal - FIXED VERSION with autoFocus and better mobile responsiveness
   const PasswordModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`max-w-md w-full mx-4 p-6 rounded-2xl shadow-2xl ${
-        darkMode ? 'bg-gray-800' : 'bg-white'
-      }`}>
-        <div className="text-center mb-6">
-          <FaLock className={`text-5xl mx-auto mb-4 ${
-            darkMode ? 'text-purple-400' : 'text-purple-600'
-          }`} />
-          <h3 className={`text-2xl font-bold ${
-            darkMode ? 'text-white' : 'text-gray-800'
-          }`}>
-            Page Locked 🔒
-          </h3>
-          <p className={`mt-2 ${
-            darkMode ? 'text-gray-400' : 'text-gray-600'
-          }`}>
-            This page is password protected. Enter the password to edit.
-          </p>
-        </div>
-        
-        <div className="space-y-4">
-          <input
-            type="password"
-            value={enteredPassword}
-            onChange={(e) => setEnteredPassword(e.target.value)}
-            placeholder="Enter password"
-            className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
-              darkMode 
-                ? 'bg-gray-700 border-gray-600 text-white' 
-                : 'bg-white border-gray-300 text-gray-900'
-            }`}
-            onKeyPress={(e) => e.key === 'Enter' && handleVerifyPassword()}
-          />
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div 
+        className={`w-full max-w-md rounded-2xl shadow-2xl transform transition-all ${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="text-center mb-6">
+            <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${
+              darkMode ? 'bg-purple-900/50' : 'bg-purple-100'
+            }`}>
+              <FaLock className={`text-4xl ${
+                darkMode ? 'text-purple-400' : 'text-purple-600'
+              }`} />
+            </div>
+            <h3 className={`text-2xl font-bold ${
+              darkMode ? 'text-white' : 'text-gray-800'
+            }`}>
+              Page Locked 🔒
+            </h3>
+            <p className={`mt-2 text-sm ${
+              darkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              This page is password protected. Enter the password to edit.
+            </p>
+          </div>
           
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setShowPasswordModal(false);
-                setEnteredPassword("");
-              }}
-              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition ${
+          <div className="space-y-4">
+            <input
+              type="password"
+              value={enteredPassword}
+              onChange={(e) => setEnteredPassword(e.target.value)}
+              placeholder="Enter password"
+              className={`w-full px-4 py-4 rounded-xl border-2 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition text-base ${
                 darkMode 
-                  ? 'bg-gray-700 text-white hover:bg-gray-600' 
-                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                  : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
               }`}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleVerifyPassword}
-              disabled={isVerifying}
-              className={`flex-1 px-4 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
-                darkMode 
-                  ? 'bg-purple-600 text-white hover:bg-purple-700' 
-                  : 'bg-purple-500 text-white hover:bg-purple-600'
-              } ${isVerifying ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {isVerifying ? (
-                <>
-                  <FaCloudDownloadAlt className="animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                <>
-                  <FaKey />
-                  Unlock
-                </>
-              )}
-            </button>
+              autoFocus
+            />
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setEnteredPassword("");
+                }}
+                className={`w-full sm:flex-1 px-4 py-4 rounded-xl font-semibold transition text-base ${
+                  darkMode 
+                    ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleVerifyPassword}
+                disabled={isVerifying}
+                className={`w-full sm:flex-1 px-4 py-4 rounded-xl font-semibold transition flex items-center justify-center gap-2 text-base ${
+                  darkMode 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                    : 'bg-purple-500 text-white hover:bg-purple-600'
+                } ${isVerifying ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isVerifying ? (
+                  <>
+                    <FaCloudDownloadAlt className="animate-spin" />
+                    <span>Verifying...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaKey />
+                    <span>Unlock</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -339,36 +348,36 @@ function App() {
           : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
       }`}>
         
-        {/* Theme Toggle */}
+        {/* Theme Toggle - Mobile Responsive */}
         <button
           onClick={() => setDarkMode(!darkMode)}
-          className={`fixed top-4 right-4 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
+          className={`fixed top-4 right-4 p-3 sm:p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
             darkMode 
               ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300' 
               : 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
           }`}
         >
-          {darkMode ? <FaSun size={20} /> : <FaMoon size={20} />}
+          {darkMode ? <FaSun size={20} className="sm:w-6 sm:h-6" /> : <FaMoon size={20} className="sm:w-6 sm:h-6" />}
         </button>
 
-        {/* Notification */}
+        {/* Notification - Mobile Responsive */}
         {notification && (
-          <div className="fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce">
+          <div className="fixed top-20 right-2 sm:right-4 left-2 sm:left-auto bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-bounce text-sm sm:text-base">
             {notification}
           </div>
         )}
 
-        <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
           {/* Creator Header */}
-          <div className={`backdrop-blur-sm shadow-lg rounded-2xl p-8 mb-8 ${
+          <div className={`backdrop-blur-sm shadow-lg rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8 ${
             darkMode ? 'bg-gray-800/80' : 'bg-white/80'
           }`}>
-            <h1 className={`text-4xl font-bold text-center mb-4 ${
+            <h1 className={`text-3xl sm:text-4xl font-bold text-center mb-3 sm:mb-4 ${
               darkMode ? 'text-white' : 'text-gray-800'
             }`}>
               Create Your Link Page 🔗
             </h1>
-            <p className={`text-center mb-6 ${
+            <p className={`text-center mb-4 sm:mb-6 text-sm sm:text-base ${
               darkMode ? 'text-gray-300' : 'text-gray-600'
             }`}>
               Set a password to protect your page from unwanted edits.
@@ -387,10 +396,10 @@ function App() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="john123"
-                  className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
+                  className={`w-full px-4 py-3 sm:py-4 rounded-xl border-2 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition text-base ${
                     darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                   }`}
                 />
               </div>
@@ -406,13 +415,13 @@ function App() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password to protect your page"
-                  className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
+                  className={`w-full px-4 py-3 sm:py-4 rounded-xl border-2 focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition text-base ${
                     darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                   }`}
                 />
-                <p className={`text-xs mt-1 ${
+                <p className={`text-xs sm:text-sm mt-1 ${
                   darkMode ? 'text-gray-400' : 'text-gray-500'
                 }`}>
                   You'll need this password to edit your page later
@@ -422,7 +431,7 @@ function App() {
               <button
                 onClick={handleSaveUserLinks}
                 disabled={isSaving || !password}
-                className={`w-full px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 ${
+                className={`w-full px-6 py-4 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2 text-base ${
                   (isSaving || !password) ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -430,7 +439,7 @@ function App() {
                 {isSaving ? 'Creating...' : 'Create Protected Page'}
               </button>
 
-              <p className={`text-sm text-center ${
+              <p className={`text-xs sm:text-sm text-center break-all ${
                 darkMode ? 'text-gray-400' : 'text-gray-500'
               }`}>
                 Your page will be at: {window.location.origin}{window.location.pathname}#{username || "username"}
@@ -439,17 +448,17 @@ function App() {
           </div>
 
           {/* Link Builder */}
-          <div className={`backdrop-blur-sm shadow-lg rounded-2xl p-8 ${
+          <div className={`backdrop-blur-sm shadow-lg rounded-2xl p-6 sm:p-8 ${
             darkMode ? 'bg-gray-800/80' : 'bg-white/80'
           }`}>
-            <h2 className={`text-2xl font-semibold mb-6 ${
+            <h2 className={`text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 ${
               darkMode ? 'text-white' : 'text-gray-800'
             }`}>
               Add Your Links
             </h2>
 
             {/* Available Platforms */}
-            <div className="mb-8">
+            <div className="mb-6 sm:mb-8">
               <h3 className={`text-sm font-medium mb-3 ${
                 darkMode ? 'text-gray-400' : 'text-gray-600'
               }`}>
@@ -460,11 +469,11 @@ function App() {
                   <button
                     key={index}
                     onClick={() => addLink(platform)}
-                    className={`${platform.color} text-white px-4 py-2 rounded-lg hover:opacity-90 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm`}
+                    className={`${platform.color} text-white px-3 sm:px-4 py-2 rounded-lg hover:opacity-90 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-xs sm:text-sm`}
                   >
-                    {getIcon(platform.iconName)}
-                    {platform.name}
-                    <FaPlus size={12} />
+                    <span className="text-sm sm:text-base">{getIcon(platform.iconName)}</span>
+                    <span className="hidden xs:inline">{platform.name}</span>
+                    <FaPlus size={10} className="sm:w-3 sm:h-3" />
                   </button>
                 ))}
               </div>
@@ -476,46 +485,53 @@ function App() {
                 {userLinks.map((link) => (
                   <div
                     key={link.id}
-                    className={`p-4 rounded-xl ${
+                    className={`p-3 sm:p-4 rounded-xl ${
                       darkMode ? 'bg-gray-700/50' : 'bg-gray-50'
                     }`}
                   >
                     {link.isEditing ? (
-                      <div className="flex gap-2">
-                        <div className={`${link.color} text-white p-3 rounded-lg flex items-center gap-2`}>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <div className={`${link.color} text-white p-3 rounded-lg flex items-center justify-center gap-2 w-full sm:w-auto`}>
                           {getIcon(link.iconName)}
+                          <span className="text-sm sm:hidden">{link.platform}</span>
                         </div>
                         <input
                           type="url"
                           value={link.url}
                           onChange={(e) => updateLink(link.id, 'url', e.target.value)}
                           placeholder={link.placeholder}
-                          className={`flex-1 px-3 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
+                          className={`flex-1 px-3 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm ${
                             darkMode 
-                              ? 'bg-gray-600 border-gray-500 text-white' 
-                              : 'bg-white border-gray-300 text-gray-900'
+                              ? 'bg-gray-600 border-gray-500 text-white placeholder-gray-400' 
+                              : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                           }`}
                         />
-                        <button
-                          onClick={() => toggleLinkEdit(link.id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                        >
-                          <FaCheck />
-                        </button>
-                        <button
-                          onClick={() => deleteLink(link.id)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                        >
-                          <FaTrash />
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => toggleLinkEdit(link.id)}
+                            className="flex-1 sm:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                          >
+                            <FaCheck className="sm:hidden" />
+                            <span className="hidden sm:inline">Save</span>
+                          </button>
+                          <button
+                            onClick={() => deleteLink(link.id)}
+                            className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                          >
+                            <FaTrash className="sm:hidden" />
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <span className={`${link.color} text-white p-2 rounded-lg`}>
                             {getIcon(link.iconName)}
                           </span>
-                          <span className={darkMode ? 'text-white' : 'text-gray-800'}>
+                          <span className={`text-sm sm:text-base truncate max-w-[200px] sm:max-w-none ${
+                            darkMode ? 'text-white' : 'text-gray-800'
+                          }`}>
                             {link.url || "No URL set"}
                           </span>
                         </div>
@@ -539,11 +555,11 @@ function App() {
                 ))}
               </div>
             ) : (
-              <div className={`text-center py-12 ${
+              <div className={`text-center py-8 sm:py-12 ${
                 darkMode ? 'text-gray-400' : 'text-gray-500'
               }`}>
-                <FaLink className="text-5xl mx-auto mb-4 opacity-50" />
-                <p>No links yet. Add some above!</p>
+                <FaLink className="text-4xl sm:text-5xl mx-auto mb-4 opacity-50" />
+                <p className="text-sm sm:text-base">No links yet. Add some above!</p>
               </div>
             )}
 
@@ -553,7 +569,7 @@ function App() {
                 <button
                   onClick={handleSaveUserLinks}
                   disabled={isSaving}
-                  className={`px-8 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 mx-auto ${
+                  className={`w-full sm:w-auto px-6 sm:px-8 py-4 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2 mx-auto text-base ${
                     isSaving ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -571,12 +587,14 @@ function App() {
   // Main view - showing user's links
   if (isLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${
+      <div className={`min-h-screen flex items-center justify-center p-4 ${
         darkMode ? 'bg-gray-900' : 'bg-gray-50'
       }`}>
         <div className="text-center">
-          <FaCloudDownloadAlt className="text-6xl text-purple-600 animate-bounce mx-auto mb-4" />
-          <p className={darkMode ? 'text-white' : 'text-gray-800'}>Loading links from cloud...</p>
+          <FaCloudDownloadAlt className="text-5xl sm:text-6xl text-purple-600 animate-bounce mx-auto mb-4" />
+          <p className={`text-base sm:text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            Loading links from cloud...
+          </p>
         </div>
       </div>
     );
@@ -592,57 +610,59 @@ function App() {
       {/* Password Modal */}
       {showPasswordModal && <PasswordModal />}
 
-      {/* Theme Toggle */}
+      {/* Theme Toggle - Mobile Responsive */}
       <button
         onClick={() => setDarkMode(!darkMode)}
-        className={`fixed top-4 right-4 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
+        className={`fixed top-3 right-3 sm:top-4 sm:right-4 p-3 sm:p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
           darkMode 
             ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300' 
             : 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
         }`}
       >
-        {darkMode ? <FaSun size={20} /> : <FaMoon size={20} />}
+        {darkMode ? <FaSun size={18} className="sm:w-5 sm:h-5" /> : <FaMoon size={18} className="sm:w-5 sm:h-5" />}
       </button>
 
-      {/* Edit Button - Shows lock if page is protected */}
+      {/* Edit Button - Mobile Responsive */}
       <button
         onClick={handleEditClick}
-        className={`fixed top-4 left-4 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 flex items-center gap-2 ${
+        className={`fixed top-3 left-3 sm:top-4 sm:left-4 p-3 sm:p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 flex items-center gap-2 ${
           darkMode 
             ? 'bg-purple-600 text-white hover:bg-purple-700' 
             : 'bg-purple-500 text-white hover:bg-purple-600'
         }`}
       >
-        {hasPassword && isLocked ? <FaLock size={20} /> : <FaUnlock size={20} />}
-        <span className="text-sm hidden sm:inline">
+        {hasPassword && isLocked ? <FaLock size={18} className="sm:w-5 sm:h-5" /> : <FaUnlock size={18} className="sm:w-5 sm:h-5" />}
+        <span className="text-xs sm:text-sm hidden sm:inline">
           {hasPassword && isLocked ? 'Locked' : 'Edit'}
         </span>
       </button>
 
-      {/* Cloud Status Indicator */}
+      {/* Cloud Status Indicator - Mobile Responsive */}
       {userLinks.length > 0 && (
-        <div className={`fixed top-4 left-24 p-2 rounded-full shadow-lg z-10 ${
+        <div className={`fixed top-3 left-16 sm:top-4 sm:left-24 p-2 rounded-full shadow-lg z-10 ${
           darkMode ? 'bg-green-600' : 'bg-green-500'
         } text-white text-xs flex items-center gap-1`}>
-          <FaCloudUploadAlt />
-          <span className="hidden sm:inline">Cloud Saved</span>
+          <FaCloudUploadAlt size={12} className="sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline text-xs">Cloud Saved</span>
         </div>
       )}
 
-      {/* Share URL Display */}
+      {/* Share URL Display - Mobile Responsive */}
       {username && (
-        <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-10 ${
+        <div className={`fixed bottom-3 left-1/2 transform -translate-x-1/2 z-10 w-[90%] sm:w-auto ${
           darkMode ? 'bg-gray-800' : 'bg-white'
-        } rounded-full shadow-lg px-4 py-2 flex items-center gap-2`}>
-          <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Share:</span>
-          <span className="text-purple-600 font-mono text-sm">
+        } rounded-full shadow-lg px-3 sm:px-4 py-2 flex items-center gap-2`}>
+          <span className={`text-xs sm:text-sm hidden sm:inline ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            Share:
+          </span>
+          <span className="text-purple-600 font-mono text-xs sm:text-sm truncate">
             {window.location.origin}{window.location.pathname}#{username}
           </span>
           <button
             onClick={() => copyToClipboard(`${window.location.origin}${window.location.pathname}#${username}`)}
-            className="p-1 hover:bg-gray-100 rounded-full transition"
+            className="p-1 hover:bg-gray-100 rounded-full transition flex-shrink-0"
           >
-            <FaCopy className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+            <FaCopy className={darkMode ? 'text-gray-400' : 'text-gray-600'} size={14} />
           </button>
         </div>
       )}
@@ -651,45 +671,45 @@ function App() {
       <div className={`backdrop-blur-sm shadow-lg transition-colors duration-300 ${
         darkMode ? 'bg-gray-800/80' : 'bg-white/80'
       }`}>
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <h1 className={`text-5xl font-bold text-center transition-colors duration-300 ${
+        <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-2">
+            <h1 className={`text-3xl sm:text-5xl font-bold text-center transition-colors duration-300 break-all ${
               darkMode ? 'text-white' : 'text-gray-800'
             }`}>
               {username}
             </h1>
             {hasPassword && (
-              <FaLock className={`text-2xl ${
+              <FaLock className={`text-xl sm:text-2xl ${
                 darkMode ? 'text-purple-400' : 'text-purple-600'
               }`} />
             )}
-            <span className="text-5xl animate-bounce inline-block">🔗</span>
+            <span className="text-3xl sm:text-5xl animate-bounce inline-block">🔗</span>
           </div>
-          <p className={`text-center mt-2 transition-colors duration-300 ${
+          <p className={`text-center mt-2 text-sm sm:text-base transition-colors duration-300 ${
             darkMode ? 'text-gray-300' : 'text-gray-600'
           }`}>
             Connect with me on social media
           </p>
           
           {/* Stats */}
-          <div className="flex justify-center gap-8 mt-6">
+          <div className="flex justify-center gap-6 sm:gap-8 mt-4 sm:mt-6">
             <div className="text-center">
-              <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+              <div className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
                 {userLinks.length}
               </div>
-              <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Platforms</div>
+              <div className={`text-xs sm:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Platforms</div>
             </div>
             <div className="text-center">
-              <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>🌐</div>
-              <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Active</div>
+              <div className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>🌐</div>
+              <div className={`text-xs sm:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Active</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Links Container */}
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="space-y-4">
+      <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
+        <div className="space-y-3 sm:space-y-4">
           {userLinks.map((link, index) => (
             <div
               key={link.id}
@@ -703,26 +723,26 @@ function App() {
                 rel="noopener noreferrer"
                 className={`${
                   darkMode ? link.darkColor : link.color
-                } text-white p-5 rounded-xl hover:opacity-90 transform hover:scale-105 hover:shadow-2xl transition-all duration-300 block shadow-lg relative overflow-hidden`}
+                } text-white p-4 sm:p-5 rounded-xl hover:opacity-90 transform hover:scale-[1.02] sm:hover:scale-105 hover:shadow-2xl transition-all duration-300 block shadow-lg relative overflow-hidden`}
               >
                 <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
                 
                 <div className="flex items-center justify-between relative z-10">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{getIcon(link.iconName)}</span>
-                    <span className="text-xl font-semibold">{link.platform}</span>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="text-xl sm:text-2xl">{getIcon(link.iconName)}</span>
+                    <span className="text-base sm:text-xl font-semibold">{link.platform}</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <button
                       onClick={(e) => {
                         e.preventDefault();
                         copyToClipboard(link.url, index);
                       }}
-                      className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors duration-200"
+                      className="p-1 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors duration-200"
                     >
-                      {copiedIndex === index ? <FaCheck size={16} /> : <FaCopy size={16} />}
+                      {copiedIndex === index ? <FaCheck size={14} className="sm:w-4 sm:h-4" /> : <FaCopy size={14} className="sm:w-4 sm:h-4" />}
                     </button>
-                    <FaArrowRight className={`text-2xl transform transition-transform duration-300 ${
+                    <FaArrowRight className={`text-xl sm:text-2xl transform transition-transform duration-300 ${
                       hoveredIndex === index ? 'translate-x-1' : ''
                     }`} />
                   </div>
@@ -730,7 +750,7 @@ function App() {
               </a>
               
               {hoveredIndex === index && (
-                <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm py-1 px-3 rounded-lg whitespace-nowrap">
+                <div className="absolute -top-8 sm:-top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs sm:text-sm py-1 px-2 sm:px-3 rounded-lg whitespace-nowrap">
                   Click to visit {link.platform}
                   <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
                 </div>
@@ -740,22 +760,22 @@ function App() {
         </div>
 
         {/* Footer */}
-        <div className={`text-center mt-12 transition-colors duration-300 ${
+        <div className={`text-center mt-8 sm:mt-12 transition-colors duration-300 text-sm sm:text-base ${
           darkMode ? 'text-gray-400' : 'text-gray-500'
         }`}>
           <p>Create your own link page at <a 
             href={window.location.pathname}
             className="text-purple-600 hover:underline"
           >MySocialLink</a></p>
-          <div className="flex justify-center gap-4 mt-4">
-            <span className="text-sm opacity-75">✨ Password protected • Cloud saved</span>
+          <div className="flex justify-center gap-4 mt-3 sm:mt-4">
+            <span className="text-xs sm:text-sm opacity-75">✨ Password protected • Cloud saved</span>
           </div>
         </div>
       </div>
 
-      {/* Notification */}
+      {/* Notification - Mobile Responsive */}
       {notification && (
-        <div className="fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce">
+        <div className="fixed top-16 sm:top-20 right-2 sm:right-4 left-2 sm:left-auto bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-bounce text-sm sm:text-base">
           {notification}
         </div>
       )}
