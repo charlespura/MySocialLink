@@ -14,7 +14,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app); // Firestore, not Realtime Database
+export const db = getFirestore(app);
 
 // Save user links to Firestore
 export const saveUserLinks = async (username, links) => {

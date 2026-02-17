@@ -5,8 +5,7 @@ import {
   FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord,
   FaCloudUploadAlt, FaCloudDownloadAlt
 } from "react-icons/fa";
-import { db, saveUserLinks, getUserLinks } from './firebase';
-import { ref, set } from 'firebase/database';
+import { saveUserLinks, getUserLinks } from './firebase'; // Removed 'db' import
 
 // Available platforms for users to choose from
 const AVAILABLE_PLATFORMS = [
@@ -65,7 +64,7 @@ function App() {
     try {
       // Try Firebase first
       const firebaseLinks = await getUserLinks(user);
-      if (firebaseLinks) {
+      if (firebaseLinks && firebaseLinks.length > 0) {
         setUserLinks(firebaseLinks);
         showNotification("Loaded from cloud! ☁️");
       } else {
@@ -95,7 +94,7 @@ function App() {
   };
 
   // Save user links to Firebase and localStorage
-  const saveUserLinks = async () => {
+  const handleSaveUserLinks = async () => {
     if (!username.trim()) {
       showNotification("Please enter a username");
       return;
@@ -105,7 +104,7 @@ function App() {
     const cleanUsername = username.toLowerCase().replace(/\s+/g, '');
     
     try {
-      // Save to Firebase (preserves your studentLogs data)
+      // Save to Firebase
       await saveUserLinks(cleanUsername, userLinks);
       
       // Save to localStorage as backup
@@ -278,7 +277,7 @@ function App() {
                   }`}
                 />
                 <button
-                  onClick={saveUserLinks}
+                  onClick={handleSaveUserLinks}
                   disabled={isSaving}
                   className={`px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 ${
                     isSaving ? 'opacity-50 cursor-not-allowed' : ''
@@ -409,7 +408,7 @@ function App() {
             {userLinks.length > 0 && (
               <div className="mt-6 text-center">
                 <button
-                  onClick={saveUserLinks}
+                  onClick={handleSaveUserLinks}
                   disabled={isSaving}
                   className={`px-8 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 mx-auto ${
                     isSaving ? 'opacity-50 cursor-not-allowed' : ''
@@ -471,28 +470,32 @@ function App() {
         <FaEdit size={20} />
       </button>
 
-      {/* Cloud Status Indicator */}
-      <div className={`fixed top-4 left-20 p-2 rounded-full shadow-lg z-10 ${
-        darkMode ? 'bg-green-600' : 'bg-green-500'
-      } text-white text-xs`}>
-        <FaCloudUploadAlt className="inline mr-1" /> Cloud Saved
-      </div>
+      {/* Cloud Status Indicator - Only show if links exist */}
+      {userLinks.length > 0 && (
+        <div className={`fixed top-4 left-20 p-2 rounded-full shadow-lg z-10 ${
+          darkMode ? 'bg-green-600' : 'bg-green-500'
+        } text-white text-xs`}>
+          <FaCloudUploadAlt className="inline mr-1" /> Cloud Saved
+        </div>
+      )}
 
       {/* Share URL Display */}
-      <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-10 ${
-        darkMode ? 'bg-gray-800' : 'bg-white'
-      } rounded-full shadow-lg px-4 py-2 flex items-center gap-2`}>
-        <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Share:</span>
-        <span className="text-purple-600 font-mono text-sm">
-          {window.location.origin}{window.location.pathname}#{username}
-        </span>
-        <button
-          onClick={() => copyToClipboard(`${window.location.origin}${window.location.pathname}#${username}`)}
-          className="p-1 hover:bg-gray-100 rounded-full transition"
-        >
-          <FaCopy className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
-        </button>
-      </div>
+      {username && (
+        <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-10 ${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        } rounded-full shadow-lg px-4 py-2 flex items-center gap-2`}>
+          <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Share:</span>
+          <span className="text-purple-600 font-mono text-sm">
+            {window.location.origin}{window.location.pathname}#{username}
+          </span>
+          <button
+            onClick={() => copyToClipboard(`${window.location.origin}${window.location.pathname}#${username}`)}
+            className="p-1 hover:bg-gray-100 rounded-full transition"
+          >
+            <FaCopy className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+          </button>
+        </div>
+      )}
 
       {/* Header */}
       <div className={`backdrop-blur-sm shadow-lg transition-colors duration-300 ${
