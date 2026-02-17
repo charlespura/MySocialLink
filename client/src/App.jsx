@@ -738,15 +738,15 @@ function App() {
         </span>
       </button>
 
-      {/* Cloud Status Indicator - Mobile Responsive */}
-      {userLinks.length > 0 && (
-        <div className={`fixed top-3 left-16 sm:top-4 sm:left-24 p-2 rounded-full shadow-lg z-10 ${
-          darkMode ? 'bg-green-600' : 'bg-green-500'
-        } text-white text-xs flex items-center gap-1`}>
-          <FaCloudUploadAlt size={12} className="sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline text-xs">Cloud Saved</span>
-        </div>
-      )}
+  {/* Cloud Status Indicator - Mobile Responsive */}
+{userLinks.length > 0 && (
+  <div className={`fixed top-3 left-16 sm:top-4 sm:left-24 p-2 rounded-full shadow-lg z-10 ml-12 ${
+    darkMode ? 'bg-green-600' : 'bg-green-500'
+  } text-white text-xs flex items-center gap-1`}>
+    <FaCloudUploadAlt size={12} className="sm:w-4 sm:h-4" />
+    <span className="hidden sm:inline text-xs">Cloud Saved</span>
+  </div>
+)}
 
       {/* Share URL Display - Mobile Responsive */}
       {username && (
