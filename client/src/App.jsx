@@ -1,18 +1,136 @@
 import { useState, useEffect } from "react";
-import { FaFacebook, FaGithub, FaInstagram, FaGlobe, FaMoon, FaSun, FaArrowRight, FaCopy, FaCheck } from "react-icons/fa";
+import { 
+  FaFacebook, FaGithub, FaInstagram, FaGlobe, FaMoon, FaSun, 
+  FaArrowRight, FaCopy, FaCheck, FaPlus, FaTrash, FaEdit, 
+  FaSave, FaLink, FaTwitter, FaYoutube, FaTiktok, FaDiscord,
+  FaGithub as FaGithubIcon // Renamed to avoid conflict
+} from "react-icons/fa";
+
+// Available platforms for users to choose from
+const AVAILABLE_PLATFORMS = [
+  { name: "Facebook", icon: <FaFacebook />, color: "bg-blue-600", darkColor: "bg-blue-700", placeholder: "https://facebook.com/yourusername" },
+  { name: "GitHub", icon: <FaGithub />, color: "bg-gray-800", darkColor: "bg-gray-900", placeholder: "https://github.com/yourusername" },
+  { name: "Instagram", icon: <FaInstagram />, color: "bg-pink-600", darkColor: "bg-pink-700", placeholder: "https://instagram.com/yourusername" },
+  { name: "Portfolio", icon: <FaGlobe />, color: "bg-purple-600", darkColor: "bg-purple-700", placeholder: "https://yourportfolio.com" },
+  { name: "Twitter", icon: <FaTwitter />, color: "bg-blue-400", darkColor: "bg-blue-500", placeholder: "https://twitter.com/yourusername" },
+  { name: "YouTube", icon: <FaYoutube />, color: "bg-red-600", darkColor: "bg-red-700", placeholder: "https://youtube.com/@yourchannel" },
+  { name: "TikTok", icon: <FaTiktok />, color: "bg-black", darkColor: "bg-gray-900", placeholder: "https://tiktok.com/@yourusername" },
+  { name: "Discord", icon: <FaDiscord />, color: "bg-indigo-600", darkColor: "bg-indigo-700", placeholder: "https://discord.gg/yourserver" },
+];
 
 function App() {
-  const [links] = useState([
-    { name: "Facebook", url: "https://web.facebook.com/charlespuracp", icon: <FaFacebook />, color: "bg-blue-600", darkColor: "bg-blue-700", lightColor: "bg-blue-500" },
-    { name: "GitHub", url: "https://github.com/charlespura", icon: <FaGithub />, color: "bg-gray-800", darkColor: "bg-gray-900", lightColor: "bg-gray-700" },
-    { name: "Portfolio", url: "https://cpportfolio.onrender.com/", icon: <FaGlobe />, color: "bg-purple-600", darkColor: "bg-purple-700", lightColor: "bg-purple-500" },
-    { name: "Instagram", url: "https://www.instagram.com/charlespura19/", icon: <FaInstagram />, color: "bg-pink-600", darkColor: "bg-pink-700", lightColor: "bg-pink-500" },
-  ]);
-
-  const [darkMode, setDarkMode] = useState(false);
+  const [username, setUsername] = useState("");
+  const [userLinks, setUserLinks] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showCreator, setShowCreator] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [notification, setNotification] = useState("");
 
+  // Get username from URL on load
+  useEffect(() => {
+    const path = window.location.pathname;
+    const urlUsername = path.split('/').pop();
+    if (urlUsername && urlUsername !== "MySocialLink" && urlUsername !== "") {
+      setUsername(urlUsername);
+      loadUserLinks(urlUsername);
+    } else {
+      setShowCreator(true);
+    }
+  }, []);
+
+  // Load user links from localStorage
+  const loadUserLinks = (user) => {
+    const saved = localStorage.getItem(`links_${user}`);
+    if (saved) {
+      setUserLinks(JSON.parse(saved));
+    } else {
+      // New user - show creator
+      setShowCreator(true);
+    }
+  };
+
+  // Save user links
+  const saveUserLinks = () => {
+    if (!username.trim()) {
+      showNotification("Please enter a username");
+      return;
+    }
+
+    // Clean username (no spaces, lowercase)
+    const cleanUsername = username.toLowerCase().replace(/\s+/g, '');
+    
+    // Save to localStorage
+    localStorage.setItem(`links_${cleanUsername}`, JSON.stringify(userLinks));
+    
+    // Update URL without page reload
+    window.history.pushState({}, '', `/MySocialLink/${cleanUsername}`);
+    
+    setUsername(cleanUsername);
+    setIsEditing(false);
+    setShowCreator(false);
+    
+    // Create shareable URL
+    const shareableUrl = `${window.location.origin}/MySocialLink/${cleanUsername}`;
+    setShareUrl(shareableUrl);
+    
+    showNotification(`Page created! Share: ${shareableUrl}`);
+  };
+
+  // Add new link
+  const addLink = (platform) => {
+    const newLink = {
+      id: Date.now(),
+      platform: platform.name,
+      url: "",
+      icon: platform.icon,
+      color: platform.color,
+      darkColor: platform.darkColor,
+      placeholder: platform.placeholder,
+      isEditing: true
+    };
+    setUserLinks([...userLinks, newLink]);
+  };
+
+  // Update link
+  const updateLink = (id, field, value) => {
+    setUserLinks(userLinks.map(link => 
+      link.id === id ? { ...link, [field]: value } : link
+    ));
+  };
+
+  // Delete link
+  const deleteLink = (id) => {
+    setUserLinks(userLinks.filter(link => link.id !== id));
+  };
+
+  // Toggle link edit mode
+  const toggleLinkEdit = (id) => {
+    setUserLinks(userLinks.map(link => 
+      link.id === id ? { ...link, isEditing: !link.isEditing } : link
+    ));
+  };
+
+  // Copy to clipboard
+  const copyToClipboard = (text, index = null) => {
+    navigator.clipboard.writeText(text);
+    if (index !== null) {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } else {
+      showNotification("Copied to clipboard!");
+    }
+  };
+
+  // Show notification
+  const showNotification = (message) => {
+    setNotification(message);
+    setTimeout(() => setNotification(""), 3000);
+  };
+
+  // Handle dark mode
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -21,12 +139,211 @@ function App() {
     }
   }, [darkMode]);
 
-  const copyToClipboard = (url, index) => {
-    navigator.clipboard.writeText(url);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
-  };
+  // If showing creator page
+  if (showCreator) {
+    return (
+      <div className={`min-h-screen transition-colors duration-300 ${
+        darkMode 
+          ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-800' 
+          : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
+      }`}>
+        
+        {/* Theme Toggle */}
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className={`fixed top-4 right-4 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
+            darkMode 
+              ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300' 
+              : 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
+          }`}
+        >
+          {darkMode ? <FaSun size={20} /> : <FaMoon size={20} />}
+        </button>
 
+        {/* Notification */}
+        {notification && (
+          <div className="fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce">
+            {notification}
+          </div>
+        )}
+
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          {/* Creator Header */}
+          <div className={`backdrop-blur-sm shadow-lg rounded-2xl p-8 mb-8 ${
+            darkMode ? 'bg-gray-800/80' : 'bg-white/80'
+          }`}>
+            <h1 className={`text-4xl font-bold text-center mb-4 ${
+              darkMode ? 'text-white' : 'text-gray-800'
+            }`}>
+              Create Your Link Page 🔗
+            </h1>
+            <p className={`text-center mb-6 ${
+              darkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              No sign-up required! Just choose a username and add your links.
+            </p>
+
+            {/* Username Input */}
+            <div className="max-w-md mx-auto">
+              <label className={`block text-sm font-medium mb-2 ${
+                darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                Choose your username
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="john123"
+                  className={`flex-1 px-4 py-3 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                />
+                <button
+                  onClick={saveUserLinks}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+                >
+                  <FaSave /> Create
+                </button>
+              </div>
+              <p className={`text-sm mt-2 ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                Your page will be at: yoursite.com/{username || "username"}
+              </p>
+            </div>
+          </div>
+
+          {/* Link Builder */}
+          <div className={`backdrop-blur-sm shadow-lg rounded-2xl p-8 ${
+            darkMode ? 'bg-gray-800/80' : 'bg-white/80'
+          }`}>
+            <h2 className={`text-2xl font-semibold mb-6 ${
+              darkMode ? 'text-white' : 'text-gray-800'
+            }`}>
+              Add Your Links
+            </h2>
+
+            {/* Available Platforms */}
+            <div className="mb-8">
+              <h3 className={`text-sm font-medium mb-3 ${
+                darkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                Choose platforms to add:
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {AVAILABLE_PLATFORMS.map((platform, index) => (
+                  <button
+                    key={index}
+                    onClick={() => addLink(platform)}
+                    className={`${platform.color} text-white px-4 py-2 rounded-lg hover:opacity-90 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-sm`}
+                  >
+                    {platform.icon}
+                    {platform.name}
+                    <FaPlus size={12} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Links List */}
+            {userLinks.length > 0 ? (
+              <div className="space-y-3">
+                {userLinks.map((link) => (
+                  <div
+                    key={link.id}
+                    className={`p-4 rounded-xl ${
+                      darkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+                    }`}
+                  >
+                    {link.isEditing ? (
+                      <div className="flex gap-2">
+                        <div className={`${link.color} text-white p-3 rounded-lg flex items-center gap-2`}>
+                          {link.icon}
+                        </div>
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(e) => updateLink(link.id, 'url', e.target.value)}
+                          placeholder={link.placeholder}
+                          className={`flex-1 px-3 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition ${
+                            darkMode 
+                              ? 'bg-gray-600 border-gray-500 text-white' 
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
+                        />
+                        <button
+                          onClick={() => toggleLinkEdit(link.id)}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        >
+                          <FaCheck />
+                        </button>
+                        <button
+                          onClick={() => deleteLink(link.id)}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className={`${link.color} text-white p-2 rounded-lg`}>
+                            {link.icon}
+                          </span>
+                          <span className={darkMode ? 'text-white' : 'text-gray-800'}>
+                            {link.url || "No URL set"}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => toggleLinkEdit(link.id)}
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button
+                            onClick={() => deleteLink(link.id)}
+                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={`text-center py-12 ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                <FaLink className="text-5xl mx-auto mb-4 opacity-50" />
+                <p>No links yet. Add some above!</p>
+              </div>
+            )}
+
+            {/* Save Button */}
+            {userLinks.length > 0 && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={saveUserLinks}
+                  className="px-8 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transform hover:scale-105 transition-all duration-200"
+                >
+                  Save & Publish Page
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main view - showing user's links
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
       darkMode 
@@ -34,7 +351,7 @@ function App() {
         : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
     }`}>
       
-      {/* Theme Toggle Button */}
+      {/* Theme Toggle */}
       <button
         onClick={() => setDarkMode(!darkMode)}
         className={`fixed top-4 right-4 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
@@ -46,6 +363,34 @@ function App() {
         {darkMode ? <FaSun size={20} /> : <FaMoon size={20} />}
       </button>
 
+      {/* Edit Button (only for page owner) */}
+      <button
+        onClick={() => setShowCreator(true)}
+        className={`fixed top-4 left-4 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-10 ${
+          darkMode 
+            ? 'bg-purple-600 text-white hover:bg-purple-700' 
+            : 'bg-purple-500 text-white hover:bg-purple-600'
+        }`}
+      >
+        <FaEdit size={20} />
+      </button>
+
+      {/* Share URL Display */}
+      {shareUrl && (
+        <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-10 ${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        } rounded-full shadow-lg px-4 py-2 flex items-center gap-2`}>
+          <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Share:</span>
+          <span className="text-purple-600 font-mono text-sm">{shareUrl}</span>
+          <button
+            onClick={() => copyToClipboard(shareUrl)}
+            className="p-1 hover:bg-gray-100 rounded-full transition"
+          >
+            <FaCopy className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className={`backdrop-blur-sm shadow-lg transition-colors duration-300 ${
         darkMode ? 'bg-gray-800/80' : 'bg-white/80'
@@ -54,7 +399,7 @@ function App() {
           <h1 className={`text-5xl font-bold text-center transition-colors duration-300 ${
             darkMode ? 'text-white' : 'text-gray-800'
           }`}>
-            Charles Pura <span className="text-5xl animate-bounce inline-block">🔗</span>
+            {username || "User"} <span className="text-5xl animate-bounce inline-block">🔗</span>
           </h1>
           <p className={`text-center mt-2 transition-colors duration-300 ${
             darkMode ? 'text-gray-300' : 'text-gray-600'
@@ -65,7 +410,9 @@ function App() {
           {/* Stats */}
           <div className="flex justify-center gap-8 mt-6">
             <div className="text-center">
-              <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>4</div>
+              <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                {userLinks.length}
+              </div>
               <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Platforms</div>
             </div>
             <div className="text-center">
@@ -79,9 +426,9 @@ function App() {
       {/* Links Container */}
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="space-y-4">
-          {links.map((link, index) => (
+          {userLinks.map((link, index) => (
             <div
-              key={index}
+              key={link.id}
               className="relative group"
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
@@ -94,16 +441,14 @@ function App() {
                   darkMode ? link.darkColor : link.color
                 } text-white p-5 rounded-xl hover:opacity-90 transform hover:scale-105 hover:shadow-2xl transition-all duration-300 block shadow-lg relative overflow-hidden`}
               >
-                {/* Animated background effect */}
                 <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
                 
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{link.icon}</span>
-                    <span className="text-xl font-semibold">{link.name}</span>
+                    <span className="text-xl font-semibold">{link.platform}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    {/* Copy button */}
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -120,10 +465,9 @@ function App() {
                 </div>
               </a>
               
-              {/* Tooltip */}
               {hoveredIndex === index && (
                 <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm py-1 px-3 rounded-lg whitespace-nowrap">
-                  Click to visit {link.name}
+                  Click to visit {link.platform}
                   <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
                 </div>
               )}
@@ -135,9 +479,12 @@ function App() {
         <div className={`text-center mt-12 transition-colors duration-300 ${
           darkMode ? 'text-gray-400' : 'text-gray-500'
         }`}>
-          <p>© 2024 Charles Pura • Built with React & Tailwind</p>
+          <p>Create your own link page at <a 
+            href="/MySocialLink/" 
+            className="text-purple-600 hover:underline"
+          >MySocialLink</a></p>
           <div className="flex justify-center gap-4 mt-4">
-            <span className="text-sm opacity-75">✨ Always open to connect</span>
+            <span className="text-sm opacity-75">✨ No sign-up required</span>
           </div>
         </div>
       </div>
