@@ -1,6 +1,6 @@
 // src/firebase.js
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set, get, child } from 'firebase/database';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyApo7T486mxPBuFFAOTKa13ktiDoz_Ww-4",
@@ -14,48 +14,35 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const db = getDatabase(app);
+export const db = getFirestore(app); // Firestore, not Realtime Database
 
-// Save user links to Firebase (preserves your existing data structure)
+// Save user links to Firestore
 export const saveUserLinks = async (username, links) => {
   try {
-    // Save to a separate node 'socialLinks' to avoid conflicts with studentLogs
-    await set(ref(db, `socialLinks/${username}`), {
+    await setDoc(doc(db, "socialLinks", username), {
       links: links,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
     return true;
   } catch (error) {
-    console.error("Error saving to Firebase:", error);
+    console.error("Error saving to Firestore:", error);
     throw error;
   }
 };
 
-// Get user links from Firebase
+// Get user links from Firestore
 export const getUserLinks = async (username) => {
   try {
-    const snapshot = await get(ref(db, `socialLinks/${username}`));
-    if (snapshot.exists()) {
-      return snapshot.val().links;
+    const docRef = doc(db, "socialLinks", username);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return docSnap.data().links;
     }
     return null;
   } catch (error) {
-    console.error("Error loading from Firebase:", error);
+    console.error("Error loading from Firestore:", error);
     throw error;
-  }
-};
-
-// Optional: Get all users (if needed)
-export const getAllUsers = async () => {
-  try {
-    const snapshot = await get(ref(db, 'socialLinks'));
-    if (snapshot.exists()) {
-      return Object.keys(snapshot.val());
-    }
-    return [];
-  } catch (error) {
-    console.error("Error getting users:", error);
-    return [];
   }
 };
