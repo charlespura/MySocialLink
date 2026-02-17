@@ -35,7 +35,7 @@
 **Backend & Database**
 
 * Firebase Firestore – NoSQL cloud database for storing user links
-* Firebase Hosting – Optional alternative deployment
+
 
 **Deployment**
 
