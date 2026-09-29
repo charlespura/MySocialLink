@@ -267,7 +267,7 @@ This project is open source under the **MIT License**.
 * GitHub: [@charlespura](https://github.com/charlespura)
 * Facebook: [charlespuracp](https://www.facebook.com/charlespuracp)
 * Instagram: [@charlespura19](https://www.instagram.com/charlespura19)
-* Portfolio: [cpportfolio.onrender.com](https://cpportfolio.onrender.com)
+* Portfolio: [charlespura.onrender.com](https://cpportfolio.onrender.com)
 
 ---
 
